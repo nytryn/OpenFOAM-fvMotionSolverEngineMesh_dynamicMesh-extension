@@ -1,0 +1,549 @@
+#!/bin/bash
+# CASESETTINGS
+
+# Copyright/authorship:
+# Author: Martin Lichtmes, 2022
+# Contact: martin.lichtmes@nytryn.eu
+
+################################################################################
+#                         SI ENGINE CFD CASE SETTINGS                          #
+################################################################################
+
+# --- PLATFORM SETTINGS --------------------------------------------------------
+# <platform>:               Computing platform for flow computation
+#   '-> "local" ----------> Use local PC
+#   '-> "cloud" ----------> Use cloud-HPC platform (CFD FEA Service) -> Not yet
+#                           implemented!
+# <nCPU_local>:             Number of maximum parallel CPU for local computation
+# <nCPU_cloud>:             Number of maximum parallel CPU for cloud computation
+# <paradigm>:               Efficiency/parallelisation paradigm for 'cloud' com-
+#   |                       putations (no effect for 'local' computations)
+#   '-> "faster" ---------> Use more cores -> Generally faster but more ex-
+#   |                       pensive in monetary cost
+#   '-> "cheaper" --------> Use lesser cores -> Generally slower but cheaper in 
+#                           monetary cost
+platform="local"
+nCPU_local=15 # only relevant CPU number
+nCPU_cloud=64
+paradigm="faster"
+# ------------------------------------------------------------------------------
+
+# --- CASE SETTINGS ------------------------------------------------------------
+# --- Mode of operation:
+# <operation>:              The automated operation to perform
+#   |-> "case" -----------> Establish the basic case structure
+#   |-> "geometry" -------> Assemble the engine geometry
+#   |-> "engineTiming" ---> Perform kinematic engine timing analysis incl.
+#   |                       valve-piston collision test based on STL geometry
+#   |-> "meshDev" -------> Create FVM test mesh at valve-overlap crank angle
+#   |                       position for CFD model develpment
+#   |-> "compRatio" ------> Compute the engine compression ratio using STL-based
+#   |                       FVM meshes
+#   |-> "QETRMeshSeries" -> Generate moving-engine Quality-Event Triggered Re-
+#   |                       meshing-based CFD grid series
+#   |-> "QETRColdCycle" --> Compute moving-engine cold-flow (without combustion)
+#   |-> "fullCycle" ------> Compute full moving-engine cycle (flow including
+#   |                       combustion)
+#   '-> "steadyState" --->  Perform cylinder head blow test for quasi-steady-
+#                           state flow parameter evaluation
+# <CA_start> [°CA]:         Transient reference crank angle (integer value). On-
+#   '-> {0 ... 720}         ly effective for QETR or steady-state flow cases.
+#                             * If <operation> == "QETR*": The starting crank
+#                               angle of the transient computation
+#                             * If <operation> == "steadyState": The reference
+#                               crank angle used to determine the quasi-steady
+#                               valve lift, read from the valve lift profiles
+# <CA_range>:               Crank angle range of the flow computation
+# <CFL_max> [-]:            The maximum allowed CFL (Courant-Friedrichs-Lewy)
+#   |                       number of the flow (ensured via dynamic time-step
+#   |                       adapation by the flow solver):
+#   |                                   CFL = Uref * Δt / Δx
+#   |                           Ux: Velocity in direction x
+#   |                           Δt: Time-step size
+#   |                           Δx: Grid step size (node distance)
+#   |                       The following intervals are based on anecdotal ex-
+#   |                       perience only and may differ casewise:
+#   |-> CFL << 1 ---------> In general, very stable and very accurate, very slow
+#   |-> CFL < 1 ----------> In general, stable and accurate, slow
+#   |-> 1 < CFL < 2 ------> In general, stable but less accurate, faster
+#   |-> 2 < CFL < 4 ------> In general, stable but potentially inaccurate, fast
+#   '-> 4 < CFL ----------> Potentially unstable and/or inaccurate, very fast
+# <doRestart>:              Whether to restart from a preceding case (must have
+#   '-> true/false          identical geometry/engine) using <CA_start> as the
+#                           restart starting crank angle when running QETR.
+# <restartFrom>:            Path string pointing to the restart source case
+# <restartCA>:              Restart crank angle (must exist in source case)
+operation="QETRColdCycle"
+symmetricDomain=true
+CA_start=582
+CA_end=1080
+CFL_max=128
+CFL_max_inj=3
+stabilised=true
+deltaT_init=1e-4 # taken as initial deltaCA by engine solvers
+deltaT_init_inj=1e-4
+deltaT_write=1
+deltaT_max=0.1
+deltaT_max_inj=0.01
+writeFrequency_min=1
+adjustTimeStep=true
+#
+doRestart=true
+restartFrom="/media/lichtmes/DATA/test/20240318_080955_QETRColdCycle/RUN"
+absorbRestartCase=false # Time directories < CA_restart + postProcessing
+CA_restart=$CA_start
+#
+engineSolver="NYTRO_engineFoam"
+moveEngineMeshSolver="NYTRO_moveEngineMesh"
+# Solution stabilisation
+limitTemperature=true
+T_min=220
+T_max=2750
+dampVelocity=true
+U_max=3500
+
+# --- GEOMETRY SETTINGS --------------------------------------------------------
+# --- Configuration:
+# <configTag>:              Name of configuration - for documentation only
+configTag="SANDIA_H2"
+# --- Nominal engine geometries:
+# <bore> [m]:               Cylinder bore diameter
+# <stroke> [m]:             Engine stroke
+# <conRodLength> [m]:       Length of the connecting rod
+# <clearanceTDC> [m]:       Piston clearance at TDC
+bore=0.092
+stroke=0.085
+conRodLength=0.16667
+clearanceTDC=0.00124
+engineRPM=1500
+toplandCreviceDepth=0.01
+extrudeToplandCreviceMesh=true
+headCreviceDepth=0.005
+extrudeHeadCreviceMesh=true
+# --- Mandatory engine components:
+# <cylinderHead>:           Cylinder head
+# <valves>:                 Intake/exhaust valves
+# <liner>:                  Liner (including cylinder head gasket, if modelled)
+# <sparkPlug>:              Spark plug
+# <piston>:                 Piston
+cylinderHead="SANDIA_H2Engine_SYM"
+valves="SANDIA_H2Engine_SYM"
+liner="SANDIA_H2Engine_SYM"
+sparkPlug="none"
+piston="SANDIA_H2Engine_SYM"
+# --- Optional engine components:
+# <prechamber>:             Pre-chamber (set "none" or "", if not present)
+# <injector>:               Injector (set "none" or "", if not present)
+prechamber="none"
+injector="SANDIA_H2ENGINE_SYM"
+#refinements="SANDIA_H2Engine_SYM"
+# --- Comonents manipulation/auxilliary settings
+# <transZ_pistonring> [m]:  Piston ring translational offset/correction
+# <rotZ_prechamber> [°]:    Pre-chamber rotational offset/correction
+# <rotZ_sparkPlug> [°]:     Spark plug rotational offset/correction
+# <rotZ_piston> [°]:        Piston rotational offset/correction
+# <injectorLocation>:       Fuel injector location
+#   '-> "ports" ----------> Ports injection
+#   '-> "chamber" --------> Direct injection
+transZ_pistonring=0.0
+rotZ_prechamber=0.0
+rotZ_sparkPlug=0.0
+rotZ_piston=0.0
+# --- Global geometry manipulations
+# <scaling_CAD> [-]:        Piston ring translational offset/correction
+# <rotX_CAD> [°]:           Pre-chamber rotational offset/correction
+# <rotY_CAD> [°]:           Spark plug rotational offset/correction
+# <rotZ_CAD> [°]:           Piston rotational offset/correction
+# <transX_CAD> [m]:         Pre-chamber rotational offset/correction
+# <transY_CAD> [m]:         Spark plug rotational offset/correction
+# <transZ_CAD> [m]:         Piston rotational offset/correction
+scaling_CAD=0.001
+rotX_CAD=0.0
+rotY_CAD=0.0
+rotZ_CAD=0.0
+transX_CAD=0.0
+transY_CAD=0.0
+transZ_CAD=0.0
+# --- ENGINE TIMING ------------------------------------------------------------
+# --- Valve controls:
+# <csv_valveLiftProfile>:   Intake/exhaust valve lift profile
+#   '-> "<PATH>" ---------> Path toprofile CSV file
+# <recess_IV> [m]:          Intake valve recess (wear-induced offset)
+# <recess_EV> [m]:          Exhaust valve recess (wear-induced offset)
+# <CA_phaseShift_IV> [m]:   Additional offset of topland ground (piston ring)
+# <CA_phaseShift_EV> [m]:   Additional offset of topland ground (piston ring)
+csv_valveLift="SANDIA_H2Engine"
+detectVO=0.0004
+lash_IV=0.0
+lash_EV=0.0
+recess_IV=0
+recess_EV=0
+CA_phaseShift_IV=0
+CA_phaseShift_EV=0
+reCalcValveVelocities=false
+skipCollisionAnalysis=true
+# --- Injection controls:
+# <csv_injection>:          Fuel injection profile
+#   |-> "<PATH>" ---------> Path to profile CSV file (if pre-computed)
+#   '-> "compute" --------> Compute new CSV file - can be saved for later use
+# <recess_IV> [m]:          Intake valve recess (wear-induced offset)
+# <recess_EV> [m]:          Exhaust valve recess (wear-induced offset)
+# <CA_phaseShift_IV> [m]:   Additional offset of topland ground (piston ring)
+# <CA_phaseShift_EV> [m]:   Additional offset of topland ground (piston ring)
+csv_injection="SANDIA_H2Engine_new"
+injectorLocation="chamber"
+injectorSymmetryCut="true"  # true/false-Bestimmung Automatisieren!!!
+CA_injection_start=583
+CA_injection_end=600.5
+deltaCA_injection_rampUp=1
+deltaCA_injection_rampDown=1
+#mDot_fuel=0.00071
+#VDot_fuel=0.000533
+fuel="H2"
+p_fuel_nozzle=10000000
+T_fuel_nozzle=303
+VDot_SLPM_fuel=7.8463 # SPLM: Standard Litres Per Minute
+mDot_perCycle_fuel=0.00436474 # [g/cyc] -> Not yet implemented
+mDot_fuel=0.00238 # SANDIA - Sforza et al.
+#rho_fuel=4.000902 computed
+#p_fuel=10000000
+injectorDefinition="standardLiterPerMinute" # Currently hard-coded in template
+# Injection models
+fuelPhase="H2" # Not yet used, which fuels are implemented? (species files in OpenFOAM) -> how allow for various choices -> QETR
+# at the moment explicitly only supports H2
+fuelPhaseModel="passive" # Note 'fuelPhase' limitations
+sprayCloud=false
+# --- PHYSICAL SETTINGS --------------------------------------------------------
+# Engine operational conditions:
+# <engineRPM> [1/min]:      Nominal engine speed
+
+# Fuel injection
+
+# Calculation of gas density:
+# rho = p * M / (R_univ * T)
+#
+# Hydrogen example (p = 100 bar, M = 1.00794 g/mol, R = 8.314, T = 303 K):
+# rho_fuel * M_fuel / (R * T_fuel) = 4.000902 kg/m³
+# Source: https://www.calculatoratoz.com/de/density-of-gas-calculator/Calc-4232
+#
+# --- Ignition controls:
+CA_ignition=510
+# Mixture properties
+#mDot_charge=2 -->> Might become relevant for steadyState tests
+#rho_charge=1.2 -->> Might become relevant for steadyState tests
+# CA pCyl pInt pExh
+# 180 93047.9427302807	100552.163295021	94061.4039670658
+#p_intake=100552
+#p_exhaust=94061
+#T_intake=309.15
+#T_exhaust=309.15
+csv_pressure="SANDIA_H2Engine"
+csv_temperature="SANDIA_H2Engine"
+#p_init_chamber=96000
+#T_init_chamber=310
+p_intake=101798 # Avg p during intake
+T_intake=309.15 # Avg T during intake
+p_exhaust=96234
+T_exhaust=309.15
+mRel_N2_in=0.0
+mRel_CO2_in=0.0
+mRel_O2_in=0.0
+mRel_H2O_in=0.0
+mRel_CH4_in=1
+#R_mixture_intake=287.05
+#rho_mixture_intake=1.2
+# Gas standard properties
+#p_std_IUPAC=100000
+#p_std_NIST=101325
+#p_std_ISO=101325
+#p_std_DIN=101325
+#T_std_IUPAC=273.15
+#T_std_NIST=273.15
+#T_std_ISO=288.15
+#T_std_DIN=273.15
+referenceStandard="NIST"
+specificHeatsRatio=1.4
+# Engine manipulation:
+
+transZ_pistonring=0.0065   # Liebherr
+transZ_pistonring=0.025    # Sandia H2
+transZ_pistonring=0.0      # NYTRO
+transZ_pistonring=0.000    # NYTRO
+rotZ_prechamber=0
+rotZ_sparkPlug=0
+rotZ_piston=0
+scaling_CAD=0.001
+rotX_CAD=0
+rotY_CAD=0
+rotZ_CAD=0
+transX_CAD=0
+transY_CAD=0
+transZ_CAD=0
+# Engine cycle controls:
+# <engineRPM>:              Engine frequency [1/s]
+# <startCA>:                First crank angle [°CA] of the simulated cycle series (default: startCA=0)
+# <endCA>:                  Last crank angle [°CA] of the simulated cycle series
+# <CA_ignition>:     Ignition crank angle [°CA] relative to TDC
+# <pathValveLiftCurvesCSV>: Path to CSV file containing intake and exhaust valve lift curves over °CA
+# ??? CA_cycle_end=578
+# ??? terminate="end"
+init_flowField="false"
+U_init_intake=(0 0 0)
+U_init_exhaust=(0 0 0)
+U_init_chamber=(0 0 0)
+p_init_intake=$p_intake
+p_init_exhaust=$p_exhaust
+p_init_chamber=$(echo "($p_intake + $p_exhaust) / 2" | bc -l)
+T_init_intake=$T_intake
+T_init_exhaust=$T_exhaust
+T_init_chamber=$(echo "($T_intake + $T_exhaust) / 2" | bc -l)
+k_init_intake=1e-2
+k_init_exhaust=1e-2
+k_init_chamber=1e-2
+epsilon_init_intake=1000
+epsilon_init_exhaust=1000
+epsilon_init_chamber=1000
+omega_init_intake=100000
+omega_init_exhaust=100000
+omega_init_chamber=100000
+# Wall BCs
+thermoWallType="fixedValue"
+T_WALL_intake=353.15
+T_WALL_piston=353.15
+T_WALL_exhaust=353.15
+T_WALL_injector=353.15
+T_WALL_valvesIntake=353.15
+T_WALL_valvesExhaust=353.15
+# sampling
+probes_locations="(( 0 0 -0.01 ) (0 0 0.01))"
+
+
+# Constraints for solver stability
+f_ULimit=1.1
+
+#
+# Engine mesh generation:-----------------------------------------------------------------------------------
+# <detectValveOpenLift>:    Minimum valve lift at which a valve is considered open (engine prototype)
+# <meshGenerator>:          cfMesh mesh generator (default: meshGenerator="cartesianMesh")
+#   '-> "cartesianMesh" --> Cartesian mesh generator
+#   '-> "pMesh" ----------> Polyhedral mesh generator
+# <maxCellSize>:            Maximum cell size (base cell size) in mesh [m]
+# <QETR_maxNonOrtho>:            Maximum allowed grid non-orthogonality before remeshing is enforced
+# <QETR_maxSkewness>:            Maximum allowed grid skewness before remeshing is enforced
+# <maxCARemesh>:            Maximum allowed crank angle intervall without remeshing
+meshDict="H2_newNew"
+meshGenerator=cartesianMesh
+baseCellSize=0.0013
+#baseCellSize=0.0012
+octreeLevel_WALL=1
+octreeLevel_SEAL=4
+octreeLevel_VALVES=2
+octreeLevel_SPARKPLUG=4
+octreeLevel_INJECTOR=2
+octreeLevel_PISTON=1
+octreeLevel_PRECHAMBER=3
+octreeLevel_LINER=1
+f_meshGlobal=1
+# boudnary layer
+nLayers_boundary=1
+maxFirstLayerThickness=0.0005
+thicknessRatio=1.05 # Higher values: Harder to get good QETR deformations
+boundaryLayerOptimisation=false
+# inlet/outlet runners
+extrude_inletRunner=false
+extrude_outletRunner=false
+nLayers_inletRunner=16
+nLayers_outletRunner=16
+r_inletRunner=1.2
+r_outletRunner=1.2
+MESHDEV_valveLift=0.001
+MESHDEV_maxNonOrtho=70
+MESHDEV_maxSkewness=6
+MESHDEV_maxSteps=3
+MESHDEV_boreDivisor=64
+MESHDEV_fRefinement=1.1
+MESHDEV_stopAfter="boundaryLayerRefinement"
+# stopAfter:
+# 1. templateGeneration
+# 2. surfaceTopology
+# 3. surfaceProjection
+# 4. patchAssignment
+# 5. edgeExtraction
+# 6. boundaryLayerGeneration
+# 7. meshOptimisation
+# 8. boundaryLayerRefinement
+QETR_maxNonOrtho_start=67.5
+QETR_maxNonOrtho_end=89
+QETR_maxSkewness_start=4.5
+QETR_maxSkewness_end=10
+QETR_detectSmallValveLift=$(echo "$detectVO * 1.25" | bc -l)
+QETR_CARange_MAX=32
+QETR_CARange_smallValveGap=4
+QETR_CARange_valveOverlap=8
+QETR_CARange_valvesOpen=16
+QETR_CARange_valvesClosed=32
+QETR_refine_nonOrthoFaces=true
+QETR_refine_skewFaces=true
+QETR_refine_badFaces=true
+QETR_refine_zeroAreaFaces=true
+QETR_refine_wrongOrientedFaces=true
+QETR_refine_pyramidErrors=true
+QETR_refine_nonClosedCells=true
+QETR_resultsFormat="OpenFOAM"
+QETR_exhaustBoundingBox_size=( )
+maxIter_meshImprove=2
+writeMeshqualityFields=false
+# Harmonise assignment of true/"true" -> What's the effect for e.g.
+# foamDicationary when either form is parsed
+results_vtk="false"
+results_ensight="false"
+results_fields="'(U p T H2 passiveFuel k)'"
+#
+# Case control:-----------------------------------------------------------------------------------------
+# <startFrom>:              Which time step to from (default: startFrom="fromZero")
+#   '-> "fromLatest" -----> Proceed from latest time step solution or - if unavailable - from RESTART
+#   '-> "fromStart" ------> Start over from starting time step
+# <CFL_max>:                 Maximum allowed CFL number (default: CFL_max=0.2)
+# <initDeltaT>:             Initial timestep size (default: initialDeltaT=1e-8)
+# <maxDeltaT>:              Maximum allowed timestep size (default: maxDeltaT=1e-3)
+# <maxCARemesh>:            Maximum allowed crank angle intervall without remeshing
+# <writeFrequency_min>:    Solution write frequency in °CA. WARNING: For robustness, the provided write
+#                           frequency is overridden (extended) if it is lower than ΔCA in the provided
+#                           valve lift curves data.
+
+# Turbulence Modelling
+simulationType="RAS"
+RASModel="kOmegaSSTSAS"
+#RASModel="kOmegaSSTSAS"
+RASDelta="cubeRootVol"
+LESModel="kOmegaSSTIDDES"
+LESDelta="IDDESDelta"
+energyModel="sensibleEnthalpy"
+
+# Schemes
+ddt_default="Euler" # For SandiaH2 (2024) -> only Euler found stable (tested multiple times: density/temperature drop to unphysical values
+grad_default="cellLimited Gauss linear 1"
+grad_U="cellLimited Gauss linear 1"
+grad_p="Gauss linear"
+div_default="none"
+div_U="Gauss MinmodV"
+div_U_inj="Gauss CoBlended 0.01 MinmodV 0.1 upwind"
+#div_e="Gauss linearUpwind grad(e)"
+#div_h="Gauss linearUpwind grad(h)"
+#div_k="Gauss linearUpwind grad(k)"
+#div_omega="Gauss linearUpwind grad(omega)"
+#div_epsilon="Gauss linearUpwind grad(epsilon)"
+div_e="Gauss limitedLinear 1" # To be tests which needs to be 1st order (turb/energy)
+div_h="Gauss limitedLinear 1" # linearUpwind for all leads to solver divergence!!!
+div_k="Gauss Minmod"
+div_omega="Gauss Minmod"
+div_epsilon="Gauss Minmod"
+div_Yi="Gauss limitedLinear01 1"
+div_passiveFuel="Gauss limitedLinear01 1"
+#div_e="Gauss upwind"
+#div_h="Gauss upwind"
+#div_k="Gauss upwind"
+#div_omega="Gauss upwind"
+#div_epsilon="Gauss upwind"
+#div_Yi="Gauss upwind"
+laplacian_default="Gauss linear limited corrected 0.333"
+snGrad_default="limited corrected 0.333"
+wallDist="Poisson"
+mapMethod="mapNearest"
+
+# --- SOLVER CONTROLS ----------------------------------------------------------
+#
+# --- SIMPLE Settings:
+# <SIMPLE_consistent>:      Use SIMPLE in consistent (C) formulation, recommen-
+#   '-> true/false          dation: 'false'
+#
+# --- PIMPLE Settings:
+# <PIMPLE_consistent>:      Use SIMPLE inside PIMPLE in consistent (C) formu-
+#   '-> true/false          lation, default: 'false' (recommendation)
+# <PIMPLE_correctPhi>:      Use flux correction
+#   '-> true/false          lation, default: 'true' (recommendation)
+# <PIMPLE_transonic>:       Use transonic formulation, default: 'true' (recom-
+#   '-> true/false          mendation)
+# <PIMPLE_UPredictor>:      Employ a momentum corrector step, default: 'true'
+#   '-> true/false
+
+SIMPLE_consistent=false
+PIMPLE_consistent=false
+PIMPLE_correctPhi=true
+PIMPLE_transonic=true
+PIMPLE_UPredictor=true
+PIMPLE_nOuterCorrectors=1   # 1 Normally sufficient. Timestep accuracy presumably improved for > 1 -> to be tested
+PIMPLE_nCorrectors=2        # 2: Speed, 3: Accuracy
+PIMPLE_nNonOrthogonalCorrectors=1 # 1: Speed 2: Accuracy
+POTENTIALFLOW_nNonOrthogonalCorrectors=4
+underRelax_p=0.95
+underRelax_U=0.9
+# CSV settings
+delimiter="space"
+# Cloud HPC
+CPUCost=0.05 # Pricing per CPU per hour in €
+APIKey='><:_sVY|F|q8.hI{;0hAWzHF;d#YNuY5?&$NhpKY=qumvyCRK'
+
+# --- ARCHIVED SETTINGS: -------------------------------------------------------
+# --- Engines:
+# SCANIA DC13 H2 Engine:
+# cylinderHead="DC13_H2"
+# valves="DC13_H2"
+# liner="DC13_H2"
+# sparkPlug="SCANIADC1374A_jGap_generic"
+# piston="DC13_H2_noTopland"
+# prechamber="none"
+# injector="DC13_H2"
+# bore=0.130            # SCANIA spec sheet
+# stroke=0.160          # SCANIA spec sheet
+# conRodLength=0.255    # 1D CFD models
+# clearanceTDC=0.0013   # 1D CFD models
+# Boundary conditionas @ 360 °CA:
+# p_intake=182000
+# p_chamber=187000
+# p_exhaust=112000
+# T_intake=320
+# T_chamber=770
+# T_exhaust=690
+# T_fuel=303
+#
+# LIEBHERR G9512
+# bore=0.130            # LIEBHERR spec sheet (G9512)
+# stroke=0.157          # LIEBHERR spec sheet (G9512)
+# conRodLength=0.289    # CAD data
+# clearanceTDC=0.0013   # LIEBHERR-Presentation (all L'HERR engines)
+#
+# SANDIA H2 Engine:
+# cylinderHead="SANDIA_H2Engine"
+# valves="SANDIA_H2Engine"
+# liner="SANDIA_H2Engine"
+# prechamber="SANDIA_H2Engine"
+# sparkPlug="SANDIA_H2Engine"
+# piston="SANDIA_H2Engine"
+# injector="SANDIA_H2Engine"
+# bore=0.092            # https://ecn.sandia.gov/ (Engine Combustion Network)
+# stroke=0.085          # https://ecn.sandia.gov/ (Engine Combustion Network)
+# conRodLength=0.16667  # https://ecn.sandia.gov/ (Engine Combustion Network)
+# clearanceTDC=0.00124  # https://ecn.sandia.gov/ (Engine Combustion Network)
+#
+# TUMBLER Test Engine:
+# cylinderHead="NYTRO_tumbler1"
+# valves="NYTRO_tumbler1"
+# liner="NYTRO_tumbler1"
+# prechamber="none"
+# sparkPlug="NYTRO_tumbler1"
+# piston="NYTRO_tumbler1"
+# injector="NYTRO_tumbler1"
+# bore=0.075            # Check CAD!
+# stroke=0.07           # Check CAD!
+# conRodLength=0.16667  # Check CAD!
+# clearanceTDC=0.00124  # Check CAD!
+# T_WALL_intake=450
+# T_WALL_piston=500
+# T_WALL_exhaust=570
+# T_WALL_injector=350
+#
+# --- Injectors:
+# HANA H2200:
+# deltaCA_injection_rampUp=14     # HANA H2200
+# deltaCA_injection_rampDown=7    # HANA H2200
