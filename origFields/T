@@ -1,0 +1,107 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      T;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 500;
+
+thermoWallType  fixedValue;
+
+T_INLET                 320;
+T_INLET_injector        303;
+T_WALL_intake           450;
+T_WALL_piston           500;
+T_WALL_exhaust          570;
+T_WALL_valvesIntake     450;
+T_WALL_valvesExhaust    570;
+T_WALL_injector         350;
+T_OUTLET                690;
+
+boundaryField
+{
+    ".*"
+    {
+        type            $thermoWallType;
+        value           uniform $T_WALL_intake;
+    }
+
+    slipWalls
+    {
+        type            zeroGradient;
+    }
+
+    "valvesIntake"
+    {
+        type            $thermoWallType;
+        value           uniform $T_WALL_valvesIntake;
+    }
+
+    "valvesExhaust"
+    {
+        type            $thermoWallType;
+        value           uniform $T_WALL_valvesExhaust;
+    }
+
+    "cylinderHead"
+    {
+        type            $thermoWallType;
+        value           uniform $T_WALL_intake;
+    }
+
+    "liner"
+    {
+        type            $thermoWallType;
+        value           uniform $T_WALL_intake;
+    }
+
+    "piston"
+    {
+        type            $thermoWallType;
+        value           uniform $T_WALL_piston;
+    }
+
+    "INJECTOR_WALL.*"
+    {
+        type            $thermoWallType;
+        value           uniform $T_WALL_injector;
+    }
+
+    "INLET_INJECTOR.*"
+    {
+        type            fixedValue;
+        value           uniform $T_INLET_injector;
+    }
+
+    INLET
+    {
+        type            fixedValue;
+        value           uniform $T_INLET;
+    }
+
+    OUTLET
+    {
+        type            inletOutlet;
+        value           uniform $T_OUTLET;
+        inletValue      uniform $T_OUTLET;
+    }
+
+    SYMMETRY
+    {
+        type    symmetry;
+    }
+}
+
+// ************************************************************************* //

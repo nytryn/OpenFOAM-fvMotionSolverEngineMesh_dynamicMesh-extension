@@ -1,0 +1,84 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    location        "system";
+    object          fvSchemes;
+}
+
+ddtSchemes
+{
+    default     CrankNicolson 0.9;
+}
+
+gradSchemes
+{
+    default     cellLimited Gauss linear 1;
+    grad(p)     Gauss linear;	
+}
+
+divSchemes
+{
+    default         none;
+    div(phi,U)      Gauss CoBlended 0.5 vanLeerV 1 MinmodV;
+    div(phi,Yi_h)      Gauss limitedLinear 1;
+    //div(phi,U)		Gauss upwind;
+    div(phiv,p)     Gauss limitedLinear 1;
+    div(phi,K)     Gauss limitedLinear 1;
+    div(phi,h)     Gauss limitedLinear 1;
+    div(phi,e)     Gauss limitedLinear 1;
+    div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
+    div((nuEff*dev2(T(grad(U))))) Gauss linear;
+    div(phi,passiveFuel)     Gauss limitedLinear 1;
+    div(phi,k)     Gauss upwind;
+    div(phi,epsilon) Gauss upwind;
+    div(phi,omega) Gauss upwind;
+    
+    // Mesh
+    div(meshPhi,p) Gauss limitedLinear 1;
+    div(phid,p) Gauss limitedLinear 1;
+}
+
+laplacianSchemes
+{
+    default         Gauss linear limited corrected 0.333;
+}
+
+interpolationSchemes
+{
+    default         linear;
+}
+
+snGradSchemes
+{
+    default         limited corrected 0.333;
+}
+
+wallDist
+{
+    method          Poisson;
+    nRequired       true;
+}
+
+fluxRequired
+{
+    default         false;
+    p               ;
+}
+
+geometry
+{
+    type stabilised;
+}
+
+
+// ************************************************************************* //

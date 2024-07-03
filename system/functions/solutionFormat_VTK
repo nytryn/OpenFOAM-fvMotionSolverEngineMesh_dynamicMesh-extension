@@ -1,0 +1,23 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2312                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+solutionFormatVTK
+{
+    type            vtkWrite;
+    libs            ( utilityFunctionObjects );
+    format          binary;
+    legacy          false;
+    decompose       false;
+    fields          (U p T rho k omega epsilon yPlus);
+    executeControl  adjustableRunTime;
+    executeInterval 1;
+    writeControl    adjustableRunTime;
+    writeFrequency  1;
+    enabled         false;
+    directory       "SOLUTION_VTK";
+}

@@ -1,0 +1,204 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+// Tightness of accuracy settings has an influence on resulting moved-mesh qua-
+// lity, especially during motion tests with large deltaT, where generally
+// deltaT := 1. During mesh motion pre-testing (e.g. QETR) tight tolerance set-
+// tings are hence required.
+cellMotion_tolerance    1e-08;
+cellMotion_relTol       1e-02;
+cellMotion_minIter      1;
+
+solvers
+{
+    "p"
+    {
+        solver          GAMG;
+        preconditioner  DIC;
+        smoother        GaussSeidel;
+        tolerance       1e-08;
+        relTol          0.01;
+        maxIter         5;
+    }
+
+    "pFinal"
+    {
+        $p;
+        relTol  0;
+    }
+
+    "rho.*"
+    {
+        solver          diagonal;
+    } 
+
+    /*"rho"
+    {
+        solver          PCG;
+        preconditioner  DIC;
+        tolerance       1e-08;
+        relTol          0.01;
+        maxIter         5; 
+    }
+
+    "rhoFinal"
+    {
+        $rho            ;
+        relTol          0;
+    }*/
+
+    "U"
+    {
+        solver          smoothSolver;
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        smoother        symGaussSeidel;
+        tolerance       1e-08;
+        relTol          0.01;
+	    maxIter		    5;
+    }
+
+    "UFinal"
+    {
+        $U;
+        relTol  0;
+    }
+
+    "k|omega|epsilon|h|e|Yi"
+    {
+        solver          smoothSolver;
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        smoother        symGaussSeidel;
+        tolerance       1e-08;
+        relTol          0.01;
+	    maxIter		    5;
+    }
+
+    "(k|omega|epsilon|h|e|Yi)Final"
+    {
+        $k;
+        relTol  0;
+    }
+
+    "passiveFuel.*"
+    {
+        solver          smoothSolver;
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        smoother        symGaussSeidel;
+        tolerance       1e-08;
+        relTol          0.01;
+        minIter         2;
+    }
+
+    "yPsi|Phi"
+    {
+        solver          GAMG;
+        preconditioner  DIC;
+        smoother        GaussSeidel;
+        tolerance       1e-8;
+        relTol          0.01;
+    }
+
+    "cellMotion.*"
+    {
+        solver          GAMG;
+        preconditioner  DIC;
+        smoother        GaussSeidel;
+        tolerance       $cellMotion_tolerance;
+        relTol          $cellMotion_relTol;
+        minIter         1;
+        // High accuracy necessary for reliable QETR deformations and wide QETR
+        // mesh series ranges. Otherwise mesh qualities may degrade faster over
+        // motion range and moreover vary severely for deformations at different
+        // timestep sizes, i.e. if moved using moveEngineMesh with comparably
+        // large timestep or during flow computation where the timesteps are
+        // generally very small.
+    }
+}
+
+SIMPLE
+{
+    consistent                  true;
+    nNonOrthogonalCorrectors    1;
+}
+
+PIMPLE
+{
+	correctPhi                  true;
+	consistent                  false;
+	transonic                   true;
+    momentumPredictor           true;
+    nOuterCorrectors            10;
+    nCorrectors                 2;
+    nNonOrthogonalCorrectors    1;
+    residualControl
+    {
+        "U"
+        {
+            tolerance       1e-06;
+            relTol          1e-03;
+        }
+        "k|H2"
+        {
+            tolerance       1e-06;
+            relTol          1e-03;
+        }
+        "p|p_rgh"
+        {
+            tolerance       1e-05;
+            relTol          1e-03;
+        }
+        "h|e"
+        {
+            tolerance       1e-05;
+            relTol          1e-03;
+        }
+    }
+}
+
+relaxationFactors
+{
+    underRelax_p    0.95;
+    underRelax_U    0.9;
+
+    fields
+    {
+        "p.*"           $underRelax_p;
+        "rho.*"         0.1;
+        ".*Final"       1;
+    }
+    equations
+    {
+        "U.*"                   	    $underRelax_U;
+        "(k|omega|epsilon|h|e|Yi|H2).*"	0.8;
+        ".*Final"                       1;
+    }
+}
+
+potentialFlow
+{
+    nNonOrthogonalCorrectors  5;
+}
+
+cache
+{
+    //grad(U);
+}
+
+// ************************************************************************* //

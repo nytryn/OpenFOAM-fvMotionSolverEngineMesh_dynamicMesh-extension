@@ -1,0 +1,119 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    INLET_INJECTOR
+    {
+        /*type                flowRateInletVelocity;
+        type                uniformNormalFixedValue;
+        extrapolateProfile  true;
+        volumetricFlowRate  csvFile;
+        nHeaderLine         1;
+        refColumn           0;
+        componentColumns    (7);
+        separator           " ";
+        mergeSeparators     true;
+        file                "$FOAM_CASE/CSV/injection.csv";
+        outOfBounds         repeat;
+        
+        uniformValue        csvFile;*/
+
+        type                flowRateInletVelocity;
+        extrapolateProfile  true;
+        value_injectionOn   0.1;
+        value_injectionOff  0;
+        rhoInlet            1.2; // Only formal for BC initialisation
+        value               uniform (0 0 0); // decomposePar crashes if missing
+        #include            "injectionProfileDict"
+        massFlowRate        table;
+        massFlowRateCoeffs
+        {
+            values          $injectionProfile;
+        }
+    }
+
+    piston
+    {
+        type            movingWallVelocity;
+        value           uniform (0 0 0);
+    }
+
+    liner
+    {
+        type            noSlip;
+    }
+
+    valveShafts
+    {
+        type            noSlip;
+    }
+
+    valvesIntake
+    {
+        type            movingWallVelocity;
+        value           uniform (0 0 0);
+    }
+
+    valvesExhaust
+    {
+        type            movingWallVelocity;
+        value           uniform (0 0 0);
+    }
+
+    cylinderHead
+    {
+        type            noSlip;
+    }
+
+    seal
+    {
+        type            noSlip;
+    }
+
+    INLET
+    {
+        type                pressureInletOutletVelocity;
+        inletValue          $internalField;
+        outletValue         uniform (0 0 0);
+        tangentialVelocity  uniform (0 0 0);
+        value               $internalField;
+    }
+
+    OUTLET
+    {
+        type                pressureInletOutletVelocity;
+        inletValue          uniform (0 0 0);
+        outletValue         uniform (0 0 0);
+        tangentialVelocity  uniform (0 0 0);
+        value               $internalField;
+    
+        type                inletOutlet;
+        inletValue          uniform (0 0 0);
+        value               $internalField;
+    }
+
+    SYMMETRY
+    {
+        type    symmetry;
+    }
+}
+
+// ************************************************************************* //

@@ -1,0 +1,76 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       pointScalarField;
+    object      pointMotionUz;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    piston
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+
+    liner
+    {
+        type    slip;
+    }
+
+    seal
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+
+    valveShafts
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+
+    valvesIntake
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+
+    valvesExhaust
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+
+    "cylinderHead|INLET.*|OUTLET.*"
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+
+    SYMMETRY
+    {
+        type    symmetry;
+    }
+
+    slipWalls
+    {
+        type    fixedValue;
+        value   uniform 0;
+    }
+}
+
+// ************************************************************************* //

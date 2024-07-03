@@ -1,0 +1,31 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2312                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+enable false;
+
+sampling_areaAverage_INLET
+{
+    type            surfaceFieldValue;
+    libs            (fieldFunctionObjects);
+    fields          (T k rho p);
+    operation       areaAverage;
+    regionType      patch;
+    name            INLET;
+
+    postOperation   none;
+    writeArea       true;
+    surfaceFormat   none;
+
+    writeFields     false;
+    enabled         $enable;
+    log             true;
+    executeControl  timeStep;
+    executeInterval 1;
+    writeControl    timeStep;
+    writeFrequency  1;
+}

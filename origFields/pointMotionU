@@ -1,0 +1,90 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       pointVectorField;
+    object      pointMotionU;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    piston
+    {
+        type    fixedValue;
+        value   uniform (0 0 0);
+    }
+
+    liner
+    {
+        type    fixedValue;
+        value   uniform (0 0 0);
+    }
+
+    valveShafts
+    {
+        type    fixedValue;
+        value   uniform (0 0 0);
+    }
+
+    seal
+    {
+        type    slip;
+    }
+
+    valvesIntake
+    {
+        type                    uniformFixedValue;
+        uniformValue            csvFile;
+        nHeaderLine             1;
+        refColumn               0;
+        componentColumns        (1 2 3);
+        separator               " ";
+        mergeSeparators         true;
+        file                    "$FOAM_CASE/CSV/valveVelocities_in.csv";
+        outOfBounds             repeat;
+    }
+
+    valvesExhaust
+    {
+        type                    uniformFixedValue;
+        uniformValue            csvFile;
+        nHeaderLine             1;
+        refColumn               0;
+        componentColumns        (1 2 3);
+        separator               " ";
+        mergeSeparators         true;
+        file                    "$FOAM_CASE/CSV/valveVelocities_ex.csv";
+        outOfBounds             repeat;
+    }
+
+    "cylinderHead|INLET.*|OUTLET.*"
+    {
+        type    fixedValue;
+        value   uniform (0 0 0);
+    }
+
+    SYMMETRY
+    {
+        type    symmetry;
+    }
+
+    slipWalls
+    {
+        type    fixedValue;
+        value   uniform (0 0 0);
+    }
+}
+
+// ************************************************************************* //
