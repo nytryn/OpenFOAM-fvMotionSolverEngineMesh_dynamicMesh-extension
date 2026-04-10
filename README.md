@@ -1,4 +1,4 @@
-# Tutorial Case Canted-Valves Engines
+# Tutorial Case Canted-Valves Engines in OpenFOAM
 ## Prerequisites
 Compile modified `fvMotionSolverEngineMesh` (`$FOAM_SRC/engine/engineMesh`) using `wmake`.
 
