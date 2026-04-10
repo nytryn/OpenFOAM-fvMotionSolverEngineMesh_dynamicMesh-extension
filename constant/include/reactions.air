@@ -1,9 +1,0 @@
-species
-(
-    air
-    H2
-);
-
-reactions
-{
-}
