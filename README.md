@@ -3,7 +3,7 @@
 Compile modified `fvMotionSolverEngineMesh` (`$FOAM_SRC/engine/engineMesh`) using `wmake`.
 
 ## Background
-3D motion is build on top of uni-directional engine motion (`engineMesh`+ `dynamicMesh`). Tested with v2206 ... v2512. The tutorial uses a heavily simplified 2D engine model with to boxes symbolising the non-vertically up-/down-moving canted valves
+3D motion is build on top of uni-directional engine motion (`engineMesh`+ `dynamicMesh`). Tested with v2206 ... v2512. The tutorial uses a heavily simplified 2D engine model with to boxes symbolising the non-vertically up-/down-moving canted valves.
 
 ## Run
 Run `Allrun` script.
