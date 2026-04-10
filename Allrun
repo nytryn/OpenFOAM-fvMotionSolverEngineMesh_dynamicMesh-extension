@@ -1,0 +1,24 @@
+#!/bin/sh
+cd "${0%/*}" || exit                                # Run from this directory
+. ${WM_PROJECT_DIR:?}/bin/tools/RunFunctions        # Tutorial run functions
+#------------------------------------------------------------------------------
+
+# Copy 2D mesh (generated in GMSH) for extrusion
+cp -r cad/engine2D.obj MeshedSurface.obj
+
+# Extrude 2D mesh
+runApplication extrude2DMesh MeshedSurface -overwrite
+rm -f MeshedSurface.obj
+
+# Mesh pre-processing
+runApplication checkMesh
+runApplication autoPatch 60 -overwrite
+runApplication createPatch -overwrite
+runApplication -s log.extrudeMesh_inlet extrudeMesh -dict system/extrudeMeshDict_inlet
+runApplication -s log.extrudeMesh_outlet extrudeMesh -dict system/extrudeMeshDict_outlet
+runApplication -s log.extrudeMesh_piston extrudeMesh -dict system/extrudeMeshDict_piston
+
+# Run solver
+cp -r ./0.orig ./360
+runApplication engineFoam
+
