@@ -4,7 +4,10 @@
 - Compile modified `fvMotionSolverEngineMesh` (`$FOAM_SRC/engine/engineMesh`) using `wmake`
 
 ## Background
-- 3D motion is build on top of uni-directional engine motion (`engineMesh`+ `dynamicMesh`). The tutorial uses a heavily simplified 2D engine model with to boxes symbolising the non-vertically up-/down-moving canted valves.
+- 3D motion is build on top of uni-directional engine motion (`engineMesh`+ `dynamicMesh`)
+- Dedicated tutorial uses a heavily simplified 2D engine model with to boxes symbolising the non-vertically up-/down-moving canted valves
+- Former implementation relied on per-solver extension, e.g. `engineFoam` - now all centralised in `fvMotionSolverEngineMesh` instead
+- Falls back to legacy behaviour if new keyword `motionType` is missing in `<constant>/engineGeometry`
 
 ## Run Tutorial
 - Run `Allrun` script
