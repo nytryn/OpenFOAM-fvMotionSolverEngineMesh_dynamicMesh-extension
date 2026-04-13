@@ -3,7 +3,7 @@
 ## Background
 - 3D motion is build on top of uni-directional engine motion (`engineMesh`+ `dynamicMesh`)
 - Predominantly developed to allow canted-valve engine simulation directly in OpenFOAM's engine solvers
-- As side effect brings in arbitrary 3D mesh motion
+- As side effect brings in arbitrary 3D mesh motion via `dynamicMesh`
 - Dedicated tutorial uses a heavily simplified 2D engine model with to boxes symbolising the non-vertically up-/down-moving canted valves
 - Former implementation relied on per-solver extension, e.g. `engineFoam` - now all centralised in `fvMotionSolverEngineMesh` instead
 - Falls back to legacy behaviour if new keyword `motionType` is missing in `<constant>/engineGeometry`
