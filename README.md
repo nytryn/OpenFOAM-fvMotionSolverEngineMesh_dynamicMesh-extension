@@ -16,7 +16,7 @@
 
 ## Run Tutorial
 - Run `Allrun` script
-- Switch to legacy behaviour (`engineMesh`/vertical valves only) by omitting or setting the `motionType` keyword in `<constant>/engineGeometry` to `engineMesh` - will "break" the tutorial (expected behaviour -> feature)
+- Switch to legacy behaviour (`engineMesh`/vertical valves only) by omitting or setting the `motionType` keyword in `<constant>/engineGeometry` to `engineMesh` - will "break" the tutorial because valves will no longer move in intended direction (expected behaviour -> feature)
 
 ![demo](https://github.com/user-attachments/assets/d22e7a70-0aba-412c-8993-1349dbe9dec7)
 
