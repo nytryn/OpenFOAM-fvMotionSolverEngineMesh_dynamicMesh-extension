@@ -192,7 +192,7 @@ void Foam::fvMotionSolverEngineMesh::move()
         // The cylinder head is the stationary end of the liner, so liner
         // points are ramped by their axial distance to the head: 0 at the
         // head side (TDC-stationary), 1 at the farthest point (piston side).
-        // Using distance-to-head instead of gMin/gMax makes the formulation
+        // Using distance-to-head instead of gMin/gMax to make formulation
         // independent of engine-axis orientation (head above or below
         // piston, any of x/y/z).
         {
