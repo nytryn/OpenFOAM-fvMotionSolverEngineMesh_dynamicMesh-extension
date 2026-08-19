@@ -20,5 +20,5 @@
 
 ![demo](https://github.com/user-attachments/assets/d22e7a70-0aba-412c-8993-1349dbe9dec7)
 
-
-
+## License
+GPLv3 as per OpenFOAM's licensing terms
